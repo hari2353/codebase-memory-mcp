@@ -25,3 +25,28 @@ def test_search_finds_by_name_and_meta():
     assert {e["key"] for e in g.search("beta")} == {"p2"}
     g.close()
 
+
+
+def test_retain_recall_reflect_and_observe():
+    g = MemoryGraph()
+    g.add_entity("p", "proj", "project")
+    g.retain("p", "shipped v1", "2026-10-31T09:00:00Z")
+    g.retain("p", "fixed parser bug", "2026-10-31T10:00:00Z")
+    g.observe("p", "parser bug was stream-layout issue")
+    r = g.recall("p", query="parser")
+    assert len(r["episodes"]) == 1 and "parser" in r["episodes"][0]["text"]
+    rf = g.reflect("p")
+    assert "parser bug was stream-layout issue" in rf["mental_model"]
+    assert len(rf["episodes"]) == 2  # most recent 2... actually limit 5
+    g.close()
+
+
+def test_recall_time_window():
+    g = MemoryGraph()
+    g.add_entity("p", "proj", "project")
+    g.retain("p", "early", "2026-10-01T00:00:00Z")
+    g.retain("p", "late", "2026-10-31T00:00:00Z")
+    r = g.recall("p", since="2026-10-15T00:00:00Z")
+    assert [e["text"] for e in r["episodes"]] == ["late"]
+    g.close()
+
