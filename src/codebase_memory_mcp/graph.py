@@ -129,8 +129,23 @@ class GitNexusGraph:
         return {"repo": repo, "top_files": top, "recent_commits": recent}
 
     @locked
-    def search_codebase_memory(self, repo: str, text: str) -> list[dict]:
-        rows = self.db.execute(
-            "SELECT name, path, meta AS kind FROM nodes "
-            "WHERE kind='symbol' AND name LIKE ? LIMIT 20", (f"%{text}%",))
-        return [dict(r) for r in rows]
+    def detect_changes(self, repo: str, changed_files: list[str]) -> dict:
+        """Map a set of changed files to their symbols + recent commits (blast radius)."""
+        out_files = []
+        for path in changed_files:
+            frow = self.db.execute(
+                "SELECT key, name FROM nodes WHERE kind='file' AND name=?", (path,)).fetchone()
+            if not frow:
+                out_files.append({"path": path, "symbols": [], "recent_commits": []})
+                continue
+            syms = [dict(r) for r in self.db.execute(
+                "SELECT name, meta AS kind FROM nodes WHERE kind='symbol' AND path=?",
+                (path,))]
+            commits = [dict(r) for r in self.db.execute(
+                "SELECT n.name AS subject, e.occurred_at FROM edges e "
+                "JOIN nodes n ON n.key=e.src WHERE e.relation='modified' AND e.dst=? "
+                "ORDER BY e.occurred_at DESC LIMIT 5", (frow["key"],))]
+            out_files.append({"path": path, "symbols": syms, "recent_commits": commits})
+        return {"repo": repo, "changed": out_files,
+                "total_symbols": sum(len(f["symbols"]) for f in out_files)}
+
