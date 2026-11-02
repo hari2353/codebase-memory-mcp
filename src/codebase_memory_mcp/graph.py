@@ -129,6 +129,13 @@ class GitNexusGraph:
         return {"repo": repo, "top_files": top, "recent_commits": recent}
 
     @locked
+    def search_codebase_memory(self, repo: str, text: str) -> list[dict]:
+        rows = self.db.execute(
+            "SELECT name, path, meta AS kind FROM nodes "
+            "WHERE kind='symbol' AND name LIKE ? LIMIT 20", (f"%{text}%",))
+        return [dict(r) for r in rows]
+
+    @locked
     def detect_changes(self, repo: str, changed_files: list[str]) -> dict:
         """Map a set of changed files to their symbols + recent commits (blast radius)."""
         out_files = []
