@@ -84,6 +84,9 @@ def build_mcp():
 
 
 def main(repo_path: str | None = None) -> None:
+    if repo_path is None:  # console script (uvx) calls main() with no args
+        import sys
+        repo_path = sys.argv[1] if len(sys.argv) > 1 else None
     if repo_path:
         from .repoindex import index_repo
         g = GitNexusGraph()
