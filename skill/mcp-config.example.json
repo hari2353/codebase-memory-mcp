@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "codebase-memory": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/hari2353/codebase-memory-mcp", "cbm-memory", "/absolute/path/to/your/repo"]
+    }
+  }
+}
